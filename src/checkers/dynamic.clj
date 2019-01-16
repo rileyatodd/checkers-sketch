@@ -1,13 +1,10 @@
 (ns checkers.dynamic
   (:require [quil.core :as q])
   (:require [genartlib.util :as u])
-  (:require [genartlib.algebra :refer :all])
-  (:require [checkers.perlin :refer [noise-generator]]))
+  (:require [genartlib.algebra :refer :all]))
 
 (def sketch-width "" 500)
 (def sketch-height "" 500)
-
-(def perlin #((noise-generator {:dimensions 1 :octaves 3}) [%]))
 
 (def t0 (/ (System/currentTimeMillis) 1000.0))
 
@@ -49,7 +46,7 @@
         pts-per-line 12
         g (grid (+ w 100) (+ h 100) num-lines pts-per-line -100.0 -100.0)]
     {:grid (grid w h num-lines pts-per-line)
-     :checkers (checkers )}))
+     :checkers (checkers g)}))
 
 (defonce play-state (atom {:paused false}))
 
@@ -83,6 +80,11 @@
 
 (defn update-state [s] {:grid (:grid s) :checkers (:checkers s)}) 
 
+(defn alter-quad [even-row? quad]
+  (let [sel (if even-row? #(> % 1) #(<= % 1))]
+    (map-indexed (fn [i [x y]] [(if (sel i) (+ x 20) x) y]) quad)))
+  
+
 (defn draw-state [state]
   (let [reversed? (even? (int (/ (t) q/PI)))
         rot (t)]
@@ -101,8 +103,10 @@
         (let [[[x0 y0]] quad]
           (q/with-translation [x0 y0]
             (q/with-rotation [rot]
-              (apply q/quad ;(map #(+ % (* 10 (q/sin rot))) 
-                                 (flatten (norm-quad quad))))))));)
+              (apply q/quad (->> quad
+                                 norm-quad
+                                 (alter-quad true)
+                                 flatten)))))))
     (doseq [quad-row (odds (:checkers @my-state))]
       (doseq [quad ((if reversed? evens odds) quad-row)]
         (let [[p0 p1 p2 p3] quad
@@ -111,5 +115,7 @@
               [[x2 y2]] rot-quad]
           (q/with-translation [x0 y0]
             (q/with-rotation [rot]
-              (apply q/quad ;(map #(+ % (* 10 (q/sin rot))) 
-                                 (flatten (norm-quad quad))))))))));)
+              (apply q/quad (->> quad
+                                 norm-quad
+                                 (alter-quad false)
+                                 flatten)))))))))
