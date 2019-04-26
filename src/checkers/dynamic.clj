@@ -87,16 +87,19 @@
 
 (defn draw-state [state]
   (let [reversed? (even? (int (/ (t) q/PI)))
-        rot (t)]
+        rot (+ (t) (- (Math/abs (q/sin (* 1 (t))))))
+        color-shift (mod (* rot 30) 255)
+        brightness (* 75 (+ 1 (q/sin rot)))
+        saturation (* 75 (+ 1 (q/sin (+ (/ q/PI  4) rot)))) ]
     (if reversed?
       (do 
-        (q/background 0 0 60)
-        (q/stroke 130 255 255 255)
-        (q/fill 130 255 255 255))
+        (q/background 0 0 brightness)
+        (q/stroke color-shift saturation 255 255)
+        (q/fill color-shift saturation 255 255))
       (do 
-        (q/background 130 255 255)
-        (q/stroke 0 0 60 255)
-        (q/fill 0 0 60 255)))
+        (q/background color-shift saturation 255)
+        (q/stroke 0 0 brightness 255)
+        (q/fill 0 0 brightness 255)))
     
     (doseq [quad-row (evens (:checkers @my-state))]
       (doseq [quad ((if reversed? odds evens) quad-row)]
