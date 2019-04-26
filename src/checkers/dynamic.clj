@@ -83,11 +83,16 @@
 (defn alter-quad [even-row? quad]
   (let [sel (if even-row? #(> % 1) #(<= % 1))]
     (map-indexed (fn [i [x y]] [(if (sel i) (+ x 20) x) y]) quad)))
+
+(defn midpoint [[x0 y0] [x1 y1]]
+  [(/ (+ x0 x1) 2.0) (/ (+ y0 y1) 2.0)])
   
+(defn alter-rot [even-row? reversed? rot]
+  (if reversed? rot (- rot)))
 
 (defn draw-state [state]
-  (let [reversed? (even? (int (/ (t) q/PI)))
-        rot (t)]
+  (let [rot (t)
+        reversed? (even? (int (/ rot q/PI)))]
     (if reversed?
       (do 
         (q/background 0 0 60)
@@ -100,22 +105,25 @@
     
     (doseq [quad-row (evens (:checkers @my-state))]
       (doseq [quad ((if reversed? odds evens) quad-row)]
-        (let [[[x0 y0]] quad]
-          (q/with-translation [x0 y0]
-            (q/with-rotation [rot]
-              (apply q/quad (->> quad
-                                 norm-quad
-                                 (alter-quad true)
-                                 flatten)))))))
+        (let [[p0 p1 p2 p3] quad
+              [x0 y0] p0
+              [xmid ymid] (midpoint p0 p2)]
+          (q/with-translation [xmid ymid]
+            (q/with-rotation [(alter-rot true reversed? rot)]
+              (q/with-translation [(- x0 xmid) (- y0 ymid)]
+                (apply q/quad (->> quad
+                                   norm-quad
+                                   (alter-quad true)
+                                   flatten)))))))                 )  
     (doseq [quad-row (odds (:checkers @my-state))]
       (doseq [quad ((if reversed? evens odds) quad-row)]
         (let [[p0 p1 p2 p3] quad
-              [[x0 y0]] quad
-              rot-quad [p2 p3 p0 p1]
-              [[x2 y2]] rot-quad]
+              [x0 y0] p0
+              [xmid ymid] (midpoint p0 p2)]
           (q/with-translation [x0 y0]
-            (q/with-rotation [rot]
-              (apply q/quad (->> quad
-                                 norm-quad
-                                 (alter-quad false)
-                                 flatten)))))))))
+            (q/with-rotation [(alter-rot false reversed? rot)]
+              (q/with-translation [(- x0 xmid) (- y0 ymid)] 
+                (apply q/quad (->> quad
+                                   norm-quad
+                                   (alter-quad false)
+                                   flatten))))))))))
